@@ -1,0 +1,1260 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ExcelQuest - Evaluación Gamificada</title>
+    
+    <!-- Librerías Externas Permitidas -->
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
+
+    <!-- ==========================================
+         MÓDULO CSS (Virtualmente: css/variables.css & css/style.css)
+         ========================================== -->
+    <style>
+        /* --- VARIABLES --- */
+        :root {
+            /* Colores Principales (Modo Claro) */
+            --primary: #58cc02; /* Verde Duolingo */
+            --primary-shadow: #58a700;
+            --secondary: #1cb0f6; /* Azul */
+            --secondary-shadow: #1899d6;
+            --bg-color: #ffffff;
+            --surface: #f7f7f7;
+            --surface-alt: #e5e5e5;
+            --text-main: #4b4b4b;
+            --text-muted: #777777;
+            
+            /* Colores de Estado */
+            --success: #58cc02;
+            --warning: #ffc800;
+            --error: #ff4b4b;
+            --xp-color: #ff9600;
+
+            /* Tipografía */
+            --font-main: 'Nunito', sans-serif;
+            
+            /* UI */
+            --radius-lg: 16px;
+            --radius-md: 12px;
+            --radius-sm: 8px;
+            --transition: 0.3s ease;
+        }
+
+        /* Modo Oscuro */
+        body.dark-mode {
+            --bg-color: #131f24;
+            --surface: #202f36;
+            --surface-alt: #37464f;
+            --text-main: #ffffff;
+            --text-muted: #afafaf;
+        }
+
+        /* --- RESET & GLOBALS --- */
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: var(--font-main);
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            overflow-x: hidden;
+            transition: background-color var(--transition), color var(--transition);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        h1, h2, h3, h4 { font-weight: 800; }
+
+        /* --- COMPONENTES --- */
+        /* Botones estilo Videojuego */
+        .btn {
+            display: inline-block;
+            font-family: var(--font-main);
+            font-weight: 800;
+            font-size: 1rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            padding: 14px 24px;
+            border-radius: var(--radius-md);
+            border: none;
+            cursor: pointer;
+            transition: transform 0.1s, box-shadow 0.1s;
+            text-align: center;
+            text-decoration: none;
+            user-select: none;
+        }
+
+        .btn-primary {
+            background-color: var(--primary);
+            color: white;
+            box-shadow: 0 4px 0 var(--primary-shadow);
+        }
+
+        .btn-primary:active {
+            transform: translateY(4px);
+            box-shadow: 0 0 0 var(--primary-shadow);
+        }
+
+        .btn-secondary {
+            background-color: var(--secondary);
+            color: white;
+            box-shadow: 0 4px 0 var(--secondary-shadow);
+        }
+
+        .btn-secondary:active {
+            transform: translateY(4px);
+            box-shadow: 0 0 0 var(--secondary-shadow);
+        }
+
+        .btn-outline {
+            background-color: transparent;
+            color: var(--text-muted);
+            border: 2px solid var(--surface-alt);
+        }
+
+        /* Tarjetas */
+        .card {
+            background-color: var(--surface);
+            border: 2px solid var(--surface-alt);
+            border-radius: var(--radius-lg);
+            padding: 24px;
+            box-shadow: 0 4px 0 var(--surface-alt);
+            margin-bottom: 20px;
+        }
+
+        /* Inputs */
+        .form-group {
+            margin-bottom: 20px;
+            text-align: left;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 700;
+            color: var(--text-muted);
+        }
+
+        .input-field {
+            width: 100%;
+            padding: 14px;
+            border: 2px solid var(--surface-alt);
+            border-radius: var(--radius-sm);
+            font-family: var(--font-main);
+            font-size: 1rem;
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            transition: border-color var(--transition);
+        }
+
+        .input-field:focus {
+            outline: none;
+            border-color: var(--secondary);
+        }
+
+        /* Progress Bar */
+        .progress-container {
+            width: 100%;
+            height: 16px;
+            background-color: var(--surface-alt);
+            border-radius: 8px;
+            overflow: hidden;
+            margin: 15px 0;
+        }
+
+        .progress-bar {
+            height: 100%;
+            background-color: var(--primary);
+            width: 0%;
+            transition: width 0.5s ease-out;
+            border-radius: 8px;
+        }
+
+        /* Toasts */
+        #toast-container {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            z-index: 1000;
+        }
+
+        .toast {
+            background-color: var(--surface);
+            color: var(--text-main);
+            border-left: 5px solid var(--secondary);
+            padding: 15px 20px;
+            border-radius: var(--radius-sm);
+            margin-top: 10px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            animation: slideIn 0.3s forwards;
+            font-weight: 600;
+        }
+        
+        .toast.success { border-left-color: var(--success); }
+        .toast.error { border-left-color: var(--error); }
+        .toast.warning { border-left-color: var(--warning); }
+
+        /* Drag & Drop Zone */
+        .drop-zone {
+            border: 3px dashed var(--surface-alt);
+            border-radius: var(--radius-lg);
+            padding: 40px 20px;
+            text-align: center;
+            cursor: pointer;
+            transition: all var(--transition);
+            background-color: var(--surface);
+        }
+
+        .drop-zone.dragover {
+            border-color: var(--secondary);
+            background-color: rgba(28, 176, 246, 0.1);
+        }
+
+        .drop-zone i {
+            font-size: 48px;
+            color: var(--secondary);
+            margin-bottom: 15px;
+        }
+
+        /* Modales */
+        .modal-overlay {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.5);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 2000;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+
+        .modal-content {
+            background: var(--bg-color);
+            padding: 30px;
+            border-radius: var(--radius-lg);
+            max-width: 500px;
+            width: 90%;
+            transform: translateY(-20px);
+            transition: transform 0.3s;
+        }
+
+        .modal-overlay.active {
+            display: flex;
+            opacity: 1;
+        }
+
+        .modal-overlay.active .modal-content {
+            transform: translateY(0);
+        }
+
+        /* --- LAYOUT & SCREENS --- */
+        .screen {
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            padding: 20px;
+            width: 100%;
+            max-width: 800px;
+            margin: 0 auto;
+            text-align: center;
+            animation: fadeIn 0.4s ease;
+        }
+
+        .screen.active {
+            display: flex;
+        }
+
+        /* Navbar Superior (Juego) */
+        .top-bar {
+            width: 100%;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px 20px;
+            background-color: var(--surface);
+            border-bottom: 2px solid var(--surface-alt);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .stat-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-weight: 700;
+            color: var(--text-muted);
+        }
+        
+        .stat-item .fa-bolt { color: var(--xp-color); }
+        .stat-item .fa-clock { color: var(--secondary); }
+
+        /* Reporte Styles (Impresión) */
+        @media print {
+            body { background: white; color: black; }
+            .top-bar, .btn, #toast-container { display: none !important; }
+            .screen { animation: none; display: block; max-width: 100%; padding: 0; }
+            .card { border: 1px solid #ccc; box-shadow: none; break-inside: avoid; }
+        }
+
+        /* Animaciones */
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes slideIn { from { transform: translateX(100%); } to { transform: translateX(0); } }
+        
+        .logo-text {
+            font-size: 3rem;
+            color: var(--primary);
+            text-shadow: 2px 2px 0 var(--primary-shadow);
+            margin-bottom: 10px;
+        }
+
+        .logo-icon {
+            font-size: 4rem;
+            color: var(--primary);
+            margin-bottom: 10px;
+        }
+
+        /* Controles Globales */
+        .global-controls {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 2000;
+            display: flex;
+            gap: 10px;
+        }
+
+        .icon-btn {
+            background: var(--surface);
+            border: 2px solid var(--surface-alt);
+            color: var(--text-main);
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+        }
+        .icon-btn:hover { background: var(--surface-alt); }
+    </style>
+</head>
+<body>
+
+    <!-- Controles Globales (Modo oscuro / Sonido) -->
+    <div class="global-controls" id="globalControls" style="display:none;">
+        <button class="icon-btn" id="btnDarkMode" title="Modo Oscuro"><i class="fas fa-moon"></i></button>
+    </div>
+
+    <!-- Barra de Estado (Visible en el juego) -->
+    <div class="top-bar" id="gameTopBar" style="display:none;">
+        <div class="stat-item">
+            <i class="fas fa-user"></i> <span id="ui-student-name">Estudiante</span>
+        </div>
+        <div class="stat-item">
+            <i class="fas fa-bolt"></i> <span id="ui-xp">0</span> XP
+        </div>
+        <div class="stat-item">
+            <i class="fas fa-clock"></i> <span id="ui-timer">00:00:00</span>
+        </div>
+    </div>
+
+    <!-- ================= SCREENS ================= -->
+
+    <!-- 1. Splash Screen -->
+    <div id="screen-splash" class="screen active">
+        <i class="fas fa-file-excel logo-icon"></i>
+        <h1 class="logo-text">ExcelQuest</h1>
+        <p style="color: var(--text-muted); font-weight: 600;">Cargando experiencia...</p>
+        <div class="progress-container" style="max-width: 300px; margin-top: 20px;">
+            <div class="progress-bar" id="splash-progress" style="width: 0%;"></div>
+        </div>
+    </div>
+
+    <!-- 2. Pantalla de Bienvenida -->
+    <div id="screen-welcome" class="screen">
+        <i class="fas fa-gamepad logo-icon" style="color: var(--secondary)"></i>
+        <h1 style="font-size: 2.5rem; margin-bottom: 15px;">Bienvenido al Reto</h1>
+        <p class="card" style="max-width: 500px; margin-bottom: 30px;">
+            Demuestra tus conocimientos de Microsoft Excel en esta evaluación gamificada.<br><br>
+            Abre Excel en tu computadora, completa las misiones y entrega tu archivo final para obtener tu calificación.
+        </p>
+        <!-- El alumno solo entra aquí y no le pide contraseña -->
+        <button class="btn btn-primary" style="width: 250px; font-size: 1.2rem;" onclick="App.navigate('register')">Comenzar</button>
+        
+        <!-- Botón de configuración para el docente -->
+        <button onclick="App.promptTeacherLogin()" style="position: absolute; bottom: 20px; right: 20px; background: none; border: none; color: var(--surface-alt); cursor: pointer; transition: color 0.3s;" onmouseover="this.style.color='var(--text-muted)'" onmouseout="this.style.color='var(--surface-alt)'" title="Configuración del Docente">
+            <i class="fas fa-cog fa-2x"></i>
+        </button>
+    </div>
+
+    <!-- 3. Registro -->
+    <div id="screen-register" class="screen">
+        <h2>Identificación</h2>
+        <p style="color: var(--text-muted); margin-bottom: 20px;">Ingresa tus datos para registrar tu progreso.</p>
+        
+        <div class="card" style="width: 100%; max-width: 400px;">
+            <div class="form-group">
+                <label>Nombres y Apellidos</label>
+                <input type="text" id="reg-name" class="input-field" placeholder="Ej. Juan Pérez" autocomplete="off">
+            </div>
+            <div class="form-group">
+                <label>Código de Estudiante</label>
+                <input type="text" id="reg-code" class="input-field" placeholder="Ej. 2026001" autocomplete="off">
+            </div>
+            <div class="form-group">
+                <label>Sección / Grupo</label>
+                <input type="text" id="reg-section" class="input-field" placeholder="Ej. A1" autocomplete="off">
+            </div>
+            <button class="btn btn-primary" style="width: 100%; margin-top: 10px;" onclick="App.registerStudent()">Iniciar Evaluación</button>
+        </div>
+    </div>
+
+    <!-- 4. Pantalla Principal (Dashboard) -->
+    <div id="screen-dashboard" class="screen">
+        <h2 style="margin-bottom: 10px;">Panel de Misiones</h2>
+        <p style="color: var(--text-muted);">Completa las misiones en tu archivo Excel.</p>
+
+        <div class="card" style="width: 100%; text-align: left;">
+            <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
+                <span style="font-weight: 700;">Progreso General</span>
+                <span id="ui-progress-text" style="font-weight: 700; color: var(--primary);">0%</span>
+            </div>
+            <div class="progress-container">
+                <div class="progress-bar" id="ui-progress-bar"></div>
+            </div>
+        </div>
+
+        <div class="card" style="width: 100%; text-align: center; background-color: var(--surface-alt);">
+            <h3 id="dash-mission-title" style="margin-bottom: 10px;">Siguiente: Misión 1</h3>
+            <p id="dash-mission-desc" style="margin-bottom: 20px; color: var(--text-muted);">Preparando el entorno.</p>
+            <button id="btn-start-mission" class="btn btn-secondary" style="width: 100%;" onclick="App.startCurrentMission()">Comenzar Misión</button>
+            <button id="btn-finish-exam" class="btn btn-primary" style="width: 100%; display: none;" onclick="App.navigate('upload')">Subir Archivo Excel</button>
+        </div>
+    </div>
+
+    <!-- 5. Pantalla de Misión -->
+    <div id="screen-mission" class="screen">
+        <div style="width: 100%; max-width: 600px; text-align: left;">
+            <button class="btn btn-outline" style="padding: 8px 15px; margin-bottom: 20px;" onclick="App.navigate('dashboard')">
+                <i class="fas fa-arrow-left"></i> Pausar
+            </button>
+            
+            <div class="card">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                    <h2 id="mission-active-title" style="color: var(--secondary);">Misión 1</h2>
+                    <span class="badge" style="background: var(--surface-alt); padding: 5px 10px; border-radius: 20px; font-weight: 700;">
+                        <i class="fas fa-stopwatch"></i> <span id="mission-active-time">2 min</span>
+                    </span>
+                </div>
+                
+                <h3 id="mission-active-obj" style="margin-bottom: 15px;">Objetivo...</h3>
+                <p id="mission-active-desc" style="font-size: 1.1rem; line-height: 1.6; margin-bottom: 25px;"></p>
+                
+                <div style="display: flex; gap: 15px;">
+                    <button class="btn btn-primary" style="flex: 1;" onclick="App.completeMission()">Ya terminé esto <i class="fas fa-check"></i></button>
+                    <button class="btn btn-outline" onclick="App.showHelp()"><i class="fas fa-lightbulb" style="color: var(--warning);"></i> Pista</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 6. Pantalla de Carga de Archivo (Upload) -->
+    <div id="screen-upload" class="screen">
+        <h2>Validación Automática</h2>
+        <p style="color: var(--text-muted); margin-bottom: 20px;">Sube tu archivo Excel final (.xlsx) para que el sistema lo evalúe.</p>
+
+        <div class="card" style="width: 100%;">
+            <input type="file" id="excel-file" accept=".xlsx, .xls" style="display: none;">
+            <div class="drop-zone" id="drop-zone" onclick="document.getElementById('excel-file').click()">
+                <i class="fas fa-file-excel"></i>
+                <h3>Arrastra tu archivo aquí</h3>
+                <p style="color: var(--text-muted); margin-top: 10px;">o haz clic para seleccionar</p>
+                <div id="file-info" style="margin-top: 15px; font-weight: 700; color: var(--primary);"></div>
+            </div>
+            
+            <button id="btn-validate" class="btn btn-primary" style="width: 100%; margin-top: 20px; display: none;" onclick="App.validateExcel()">Validar Archivo</button>
+        </div>
+    </div>
+
+    <!-- 7. Pantalla Final (Resultados) -->
+    <div id="screen-results" class="screen">
+        <i class="fas fa-trophy logo-icon" style="color: var(--warning)"></i>
+        <h1 style="font-size: 2.5rem; margin-bottom: 10px;">¡Evaluación Completada!</h1>
+        <p>ID: <span id="res-id" style="font-family: monospace; font-weight: 700; color: var(--text-muted);"></span></p>
+        
+        <div class="card" style="width: 100%; text-align: center; margin-top: 20px;">
+            <h2 style="font-size: 3rem; color: var(--primary); margin-bottom: 5px;" id="res-score">20/20</h2>
+            <p style="font-weight: 700; color: var(--text-muted); margin-bottom: 20px;">Nota Final</p>
+            
+            <div style="display: flex; justify-content: space-around; text-align: center; border-top: 2px solid var(--surface-alt); padding-top: 15px;">
+                <div>
+                    <div style="font-size: 1.5rem; font-weight: 800; color: var(--xp-color);" id="res-xp">0</div>
+                    <div style="font-size: 0.9rem; color: var(--text-muted);">XP Ganados</div>
+                </div>
+                <div>
+                    <div style="font-size: 1.5rem; font-weight: 800; color: var(--secondary);" id="res-time">00:00</div>
+                    <div style="font-size: 0.9rem; color: var(--text-muted);">Tiempo</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card" style="width: 100%; text-align: left;" id="res-details">
+            <!-- Detalles de validación generados por JS -->
+        </div>
+
+        <div style="display: flex; gap: 15px; width: 100%; flex-wrap: wrap;">
+            <button class="btn btn-outline" style="flex: 1;" onclick="window.print()"><i class="fas fa-print"></i> Imprimir Reporte</button>
+            <button class="btn btn-primary" style="flex: 2;" onclick="App.submitGoogleForm()"><i class="fab fa-google"></i> Entregar Evaluación</button>
+        </div>
+    </div>
+
+    <!-- 8. Pantalla de Disponibilidad (Cerrado) -->
+    <div id="screen-closed" class="screen">
+        <i class="fas fa-lock logo-icon" style="color: var(--error)"></i>
+        <h1 style="font-size: 2.5rem; margin-bottom: 15px;">Evaluación Cerrada</h1>
+        <p class="card" style="max-width: 500px; margin-bottom: 30px;" id="closed-message">
+            Esta evaluación no se encuentra disponible en este momento.
+        </p>
+
+        <!-- Botón de configuración para el docente (Para poder abrirla de nuevo) -->
+        <button onclick="App.promptTeacherLogin()" style="position: absolute; bottom: 20px; right: 20px; background: none; border: none; color: var(--surface-alt); cursor: pointer; transition: color 0.3s;" onmouseover="this.style.color='var(--text-muted)'" onmouseout="this.style.color='var(--surface-alt)'" title="Configuración del Docente">
+            <i class="fas fa-cog fa-2x"></i>
+        </button>
+    </div>
+
+    <!-- 9. Panel de Configuración del Docente -->
+    <div id="screen-config" class="screen">
+        <h2 style="margin-bottom: 5px;"><i class="fas fa-cog"></i> Panel del Docente</h2>
+        <p style="color: var(--text-muted); margin-bottom: 20px;">Configura los parámetros de la evaluación.</p>
+        
+        <div class="card" style="width: 100%; max-width: 500px;">
+            <div class="form-group">
+                <label>Contraseña de Acceso Docente</label>
+                <!-- Se cambió el tipo a "password" para ocultar la contraseña -->
+                <input type="password" id="conf-password" class="input-field" placeholder="Nueva contraseña...">
+            </div>
+            <hr style="border: 1px solid var(--surface-alt); margin: 20px 0;">
+            <div class="form-group">
+                <label>Habilitar límite de fechas</label>
+                <select id="conf-enabled" class="input-field">
+                    <option value="true">Sí, usar fechas de apertura y cierre</option>
+                    <option value="false">No, evaluación siempre abierta</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Fecha y Hora de Apertura</label>
+                <input type="datetime-local" id="conf-start" class="input-field">
+            </div>
+            <div class="form-group">
+                <label>Fecha y Hora de Cierre (Prórroga)</label>
+                <input type="datetime-local" id="conf-end" class="input-field">
+            </div>
+            <div class="form-group">
+                <label>URL de Google Forms (Entrega)</label>
+                <input type="url" id="conf-url" class="input-field" placeholder="https://docs.google.com/forms/...">
+            </div>
+            <div class="form-group">
+                <label>Tiempo Máximo (Minutos)</label>
+                <input type="number" id="conf-time" class="input-field" min="1">
+            </div>
+            
+            <button class="btn btn-primary" style="width: 100%; margin-top: 10px;" onclick="App.saveConfig()"><i class="fas fa-save"></i> Guardar Configuración</button>
+            <button class="btn btn-outline" style="width: 100%; margin-top: 15px;" onclick="App.navigate('welcome')">Cerrar Panel</button>
+        </div>
+    </div>
+
+    <!-- ================= MODALS & TOASTS ================= -->
+    <div id="toast-container"></div>
+
+    <div class="modal-overlay" id="help-modal">
+        <div class="modal-content">
+            <h3 style="color: var(--warning); margin-bottom: 10px;"><i class="fas fa-lightbulb"></i> Pista de la Misión</h3>
+            <p id="help-text" style="line-height: 1.6; margin-bottom: 20px;"></p>
+            <button class="btn btn-secondary" style="width: 100%;" onclick="App.closeHelp()">Entendido</button>
+        </div>
+    </div>
+
+    <!-- Modal Login Docente -->
+    <div class="modal-overlay" id="teacher-login-modal">
+        <div class="modal-content">
+            <h3 style="color: var(--secondary); margin-bottom: 10px;"><i class="fas fa-user-shield"></i> Acceso Docente</h3>
+            <!-- El texto que indicaba la contraseña ha sido eliminado -->
+            <p style="color: var(--text-muted); margin-bottom: 15px;">Ingrese la contraseña para configurar la evaluación.</p>
+            <input type="password" id="teacher-password-input" class="input-field" placeholder="Contraseña..." style="margin-bottom: 20px;">
+            <div style="display: flex; gap: 10px;">
+                <button class="btn btn-primary" style="flex: 1;" onclick="App.verifyTeacherLogin()">Ingresar</button>
+                <button class="btn btn-outline" style="flex: 1;" onclick="App.closeTeacherLogin()">Cancelar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ==========================================
+         MÓDULO JAVASCRIPT (Virtualmente: js/config.js, js/game.js, js/excelValidator.js, js/app.js)
+         ========================================== -->
+    <script>
+        /**
+         * ==========================================
+         * MÓDULO: CONFIGURACIÓN (config.js)
+         * ==========================================
+         */
+        const CONFIG = {
+            courseName: "Excel Básico - Gamificado",
+            teacher: "Docente Principal",
+            institution: "Academia Virtual",
+            maxTimeMinutes: 30, // Tiempo límite
+            googleFormUrl: "https://docs.google.com/forms/d/e/1FAIpQLSfDUMMY_FORM_ID/viewform",
+            darkModeDefault: false,
+            soundEnabled: true,
+            totalScore: 20,
+            teacherPassword: "12admin23", // Contraseña por defecto para el docente
+            // Configuración de disponibilidad (Fechas de apertura y cierre)
+            availability: {
+                enabled: true, // Cambiar a false si no deseas usar límite de fechas
+                start: "2026-07-01T08:00:00", // Fecha y hora de apertura (Formato Año-Mes-DíaTHora:Minuto:Segundo)
+                end: "2026-12-31T23:59:59"    // Fecha y hora de cierre
+            }
+        };
+
+        /**
+         * ==========================================
+         * MÓDULO: MISIONES (missions.js)
+         * Define las tareas que el estudiante debe realizar en Excel.
+         * ==========================================
+         */
+        const MISSIONS = [
+            {
+                id: 1, title: "Crear Libro", objetivo: "Crea un nuevo archivo de Excel",
+                descripcion: "Abre Microsoft Excel en tu computadora, crea un Libro en blanco y guárdalo en tu Escritorio con el nombre <b>'MiEvaluacion.xlsx'</b>.",
+                pista: "Archivo > Nuevo > Libro en blanco. Luego Archivo > Guardar como.",
+                xp: 50, points: 2, funcValidacion: 'ruleWorkbook'
+            },
+            {
+                id: 2, title: "Hoja de Ventas", objetivo: "Crear y renombrar una hoja",
+                descripcion: "Cambia el nombre de la 'Hoja1' por <b>'Ventas'</b>.",
+                pista: "Haz doble clic en la pestaña que dice 'Hoja1' en la parte inferior de Excel y escribe 'Ventas'.",
+                xp: 50, points: 2, funcValidacion: 'ruleSheets'
+            },
+            {
+                id: 3, title: "Estructura de Datos", objetivo: "Crear encabezados",
+                descripcion: "En la hoja 'Ventas', escribe los siguientes encabezados en la primera fila (A1 hasta D1):<br><b>A1: Producto<br>B1: Precio<br>C1: Cantidad<br>D1: Total</b>",
+                pista: "Selecciona la celda A1, escribe, y usa la tecla Tab o flecha derecha para ir a la siguiente.",
+                xp: 100, points: 3, funcValidacion: 'ruleHeaders'
+            },
+            {
+                id: 4, title: "Ingreso de Inventario", objetivo: "Llenar datos de productos",
+                descripcion: "Ingresa 5 productos con sus precios y cantidades. Ocupa desde la fila 2 hasta la fila 6.",
+                pista: "Inventa los datos. Ejemplo: A2: Laptop, B2: 1000, C2: 2.",
+                xp: 100, points: 3, funcValidacion: 'ruleData'
+            },
+            {
+                id: 5, title: "El Gran Total", objetivo: "Usar la función SUMA",
+                descripcion: "En la celda <b>D7</b>, utiliza la función SUMA para calcular la suma de todos los totales (D2 a D6). *Opcional: calcula los totales primero multiplicando Precio*Cantidad.",
+                pista: "Usa la fórmula: =SUMA(D2:D6)",
+                xp: 150, points: 4, funcValidacion: 'ruleSum'
+            },
+            {
+                id: 6, title: "Análisis Rápido", objetivo: "Usar PROMEDIO, MAX y MIN",
+                descripcion: "En <b>B7</b> calcula el PROMEDIO de los precios.<br>En <b>B8</b> calcula el precio MAX.<br>En <b>B9</b> calcula el precio MIN.",
+                pista: "=PROMEDIO(B2:B6), =MAX(B2:B6), =MIN(B2:B6)",
+                xp: 150, points: 6, funcValidacion: 'ruleStats'
+            }
+        ];
+
+        /**
+         * ==========================================
+         * MÓDULO: ALMACENAMIENTO LOCAL (storage.js)
+         * ==========================================
+         */
+        const GameStorage = {
+            save: (key, data) => localStorage.setItem(`exq_${key}`, JSON.stringify(data)),
+            load: (key) => JSON.parse(localStorage.getItem(`exq_${key}`)),
+            clear: () => {
+                const isDark = GameStorage.load('darkMode');
+                localStorage.clear();
+                if(isDark) GameStorage.save('darkMode', true); // Mantener preferencia
+            }
+        };
+
+        /**
+         * ==========================================
+         * MÓDULO: UI & UTILIDADES (ui.js / utils.js)
+         * ==========================================
+         */
+        const UI = {
+            toast: (msg, type = 'success') => {
+                const container = document.getElementById('toast-container');
+                const toast = document.createElement('div');
+                toast.className = `toast ${type}`;
+                let icon = type === 'success' ? 'fa-check-circle' : (type === 'error' ? 'fa-times-circle' : 'fa-exclamation-triangle');
+                toast.innerHTML = `<i class="fas ${icon}"></i> ${msg}`;
+                container.appendChild(toast);
+                setTimeout(() => {
+                    toast.style.opacity = '0';
+                    setTimeout(() => toast.remove(), 300);
+                }, 3000);
+            },
+            playSound: (type) => {
+                if(!CONFIG.soundEnabled) return;
+                // Simulación de sonido usando Web Audio API para no requerir archivos locales
+                const ctx = new (window.AudioContext || window.webkitAudioContext)();
+                const osc = ctx.createOscillator();
+                const gainNode = ctx.createGain();
+                osc.connect(gainNode);
+                gainNode.connect(ctx.destination);
+                
+                if (type === 'success') {
+                    osc.type = 'sine'; osc.frequency.setValueAtTime(600, ctx.currentTime);
+                    osc.frequency.exponentialRampToValueAtTime(1000, ctx.currentTime + 0.1);
+                    gainNode.gain.setValueAtTime(0.1, ctx.currentTime);
+                    gainNode.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.3);
+                    osc.start(); osc.stop(ctx.currentTime + 0.3);
+                } else if (type === 'click') {
+                    osc.type = 'square'; osc.frequency.setValueAtTime(400, ctx.currentTime);
+                    gainNode.gain.setValueAtTime(0.05, ctx.currentTime);
+                    gainNode.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.1);
+                    osc.start(); osc.stop(ctx.currentTime + 0.1);
+                } else if (type === 'error') {
+                    osc.type = 'sawtooth'; osc.frequency.setValueAtTime(300, ctx.currentTime);
+                    osc.frequency.exponentialRampToValueAtTime(150, ctx.currentTime + 0.2);
+                    gainNode.gain.setValueAtTime(0.1, ctx.currentTime);
+                    gainNode.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.2);
+                    osc.start(); osc.stop(ctx.currentTime + 0.2);
+                }
+            },
+            formatTime: (seconds) => {
+                const h = Math.floor(seconds / 3600).toString().padStart(2, '0');
+                const m = Math.floor((seconds % 3600) / 60).toString().padStart(2, '0');
+                const s = Math.floor(seconds % 60).toString().padStart(2, '0');
+                return h > 0 ? `${h}:${m}:${s}` : `${m}:${s}`;
+            },
+            generateEvalID: () => {
+                const date = new Date();
+                const dStr = date.toISOString().slice(0,10).replace(/-/g, '');
+                const rnd = Math.floor(100 + Math.random() * 900);
+                return `EXQ-${dStr}-${rnd}`;
+            }
+        };
+
+        /**
+         * ==========================================
+         * MÓDULO: EXCEL VALIDATOR (excelValidator.js)
+         * Reglas basadas en SheetJS
+         * ==========================================
+         */
+        const ExcelValidator = {
+            workbook: null,
+            results: [],
+            totalScore: 0,
+            
+            readAndValidate: async (file) => {
+                return new Promise((resolve, reject) => {
+                    const reader = new FileReader();
+                    reader.onload = (e) => {
+                        try {
+                            const data = new Uint8Array(e.target.result);
+                            ExcelValidator.workbook = XLSX.read(data, {type: 'array', cellFormula: true});
+                            ExcelValidator.runRules();
+                            resolve(ExcelValidator.results);
+                        } catch (err) {
+                            reject("El archivo está corrupto o no es un Excel válido.");
+                        }
+                    };
+                    reader.onerror = () => reject("Error al leer el archivo.");
+                    reader.readAsArrayBuffer(file);
+                });
+            },
+
+            runRules: () => {
+                ExcelValidator.results = [];
+                ExcelValidator.totalScore = 0;
+                let wb = ExcelValidator.workbook;
+
+                // Regla 1: Libro (Siempre pasa si SheetJS lo lee)
+                ExcelValidator.addResult(1, true, "Archivo Excel creado y guardado correctamente.", MISSIONS[0].points);
+
+                // Regla 2: Hoja de Ventas
+                const hasVentas = wb.SheetNames.map(n => n.toLowerCase()).includes('ventas');
+                ExcelValidator.addResult(2, hasVentas, hasVentas ? "Hoja 'Ventas' encontrada." : "No se encontró la hoja llamada 'Ventas'.", hasVentas ? MISSIONS[1].points : 0);
+
+                // Si no hay hoja Ventas, detener o calificar 0 en el resto
+                let ws = wb.Sheets[wb.SheetNames.find(n => n.toLowerCase() === 'ventas') || wb.SheetNames[0]];
+
+                // Regla 3: Encabezados (A1:D1)
+                const h1 = ws['A1']?.v?.toString().toLowerCase().includes('producto');
+                const h2 = ws['B1']?.v?.toString().toLowerCase().includes('precio');
+                const h3 = ws['C1']?.v?.toString().toLowerCase().includes('cantidad');
+                const h4 = ws['D1']?.v?.toString().toLowerCase().includes('total');
+                const headersOk = h1 && h2 && h3 && h4;
+                ExcelValidator.addResult(3, headersOk, headersOk ? "Encabezados correctos en A1:D1." : "Faltan encabezados o no están en A1:D1.", headersOk ? MISSIONS[2].points : 0);
+
+                // Regla 4: Datos (Filas 2 a 6 en columna A, B, C)
+                let dataCount = 0;
+                for(let i=2; i<=6; i++) { if(ws[`A${i}`]?.v && ws[`B${i}`]?.v) dataCount++; }
+                const dataOk = dataCount >= 3; // Tolerar 3 a 5
+                ExcelValidator.addResult(4, dataOk, dataOk ? "Datos de productos ingresados." : "Faltan datos de productos.", dataOk ? MISSIONS[3].points : 0);
+
+                // Función auxiliar para buscar fórmulas
+                const searchFormula = (formulaStr) => {
+                    let found = false;
+                    for (let cell in ws) {
+                        if (ws[cell] && ws[cell].f && ws[cell].f.toUpperCase().includes(formulaStr)) {
+                            found = true; break;
+                        }
+                    }
+                    return found;
+                };
+
+                // Regla 5: Función SUMA
+                const sumOk = searchFormula('SUM');
+                ExcelValidator.addResult(5, sumOk, sumOk ? "Función SUMA aplicada correctamente." : "No se encontró la función SUMA.", sumOk ? MISSIONS[4].points : 0);
+
+                // Regla 6: Funciones Estadísticas (PROMEDIO, MAX, MIN)
+                // SheetJS en inglés usa AVERAGE, MAX, MIN. 
+                const avgOk = searchFormula('AVERAGE');
+                const maxOk = searchFormula('MAX');
+                const minOk = searchFormula('MIN');
+                
+                let statsPts = 0;
+                if(avgOk) statsPts += 2;
+                if(maxOk) statsPts += 2;
+                if(minOk) statsPts += 2;
+                const statsOk = avgOk && maxOk && minOk;
+                
+                ExcelValidator.addResult(6, statsOk, statsOk ? "Funciones PROMEDIO, MAX y MIN correctas." : `Faltan funciones estadísticas. (PROMEDIO: ${avgOk?'Sí':'No'}, MAX: ${maxOk?'Sí':'No'}, MIN: ${minOk?'Sí':'No'})`, statsPts);
+            },
+
+            addResult: (missionId, passed, message, points) => {
+                ExcelValidator.results.push({ missionId, passed, message, points });
+                ExcelValidator.totalScore += points;
+            }
+        };
+
+        /**
+         * ==========================================
+         * MÓDULO: MOTOR DEL JUEGO (game.js / app.js)
+         * Controlador Principal de la Aplicación
+         * ==========================================
+         */
+        const App = {
+            state: {
+                student: null,
+                evalId: null,
+                currentMissionIdx: 0,
+                xp: 0,
+                timeSeconds: 0,
+                isTimerRunning: false,
+                finished: false,
+                fileObj: null
+            },
+            timerInterval: null,
+
+            init: () => {
+                // Eventos UI Globales
+                document.getElementById('btnDarkMode').addEventListener('click', App.toggleDarkMode);
+                
+                // Configurar Drop Zone
+                const dropZone = document.getElementById('drop-zone');
+                const fileInput = document.getElementById('excel-file');
+                
+                dropZone.addEventListener('dragover', (e) => { e.preventDefault(); dropZone.classList.add('dragover'); });
+                dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragover'));
+                dropZone.addEventListener('drop', (e) => {
+                    e.preventDefault();
+                    dropZone.classList.remove('dragover');
+                    if(e.dataTransfer.files.length) {
+                        fileInput.files = e.dataTransfer.files;
+                        App.handleFileSelect(e.dataTransfer.files[0]);
+                    }
+                });
+                fileInput.addEventListener('change', (e) => {
+                    if(e.target.files.length) App.handleFileSelect(e.target.files[0]);
+                });
+
+                // Cargar configuración del docente guardada previamente
+                const savedConfig = GameStorage.load('teacherConfig');
+                if (savedConfig) {
+                    Object.assign(CONFIG, savedConfig);
+                    
+                    // Si en LocalStorage existía la contraseña antigua (admin), la forzamos a la nueva para no bloquearte
+                    if (CONFIG.teacherPassword === "admin") {
+                        CONFIG.teacherPassword = "12admin23";
+                        GameStorage.save('teacherConfig', CONFIG);
+                    }
+                }
+
+                // Cargar preferencias
+                if (GameStorage.load('darkMode') || CONFIG.darkModeDefault) {
+                    document.body.classList.add('dark-mode');
+                }
+
+                // Animación Splash
+                setTimeout(() => {
+                    document.getElementById('splash-progress').style.width = '100%';
+                    setTimeout(() => {
+                        // Verificar la fecha antes de continuar
+                        if (!App.checkAvailability()) {
+                            App.navigate('closed');
+                        } else {
+                            App.checkResumption();
+                        }
+                    }, 800);
+                }, 500);
+            },
+
+            checkAvailability: () => {
+                if (!CONFIG.availability.enabled) return true;
+                
+                const now = new Date();
+                const startDate = new Date(CONFIG.availability.start);
+                const endDate = new Date(CONFIG.availability.end);
+                const messageEl = document.getElementById('closed-message');
+
+                if (now < startDate) {
+                    messageEl.innerHTML = `La evaluación aún no está abierta.<br><br>Estará disponible a partir del <br><b style="color:var(--secondary)">${startDate.toLocaleString()}</b>.`;
+                    return false;
+                }
+                
+                if (now > endDate) {
+                    messageEl.innerHTML = `El plazo para esta evaluación ha finalizado.<br><br>La fecha límite fue el <br><b style="color:var(--error)">${endDate.toLocaleString()}</b>.`;
+                    return false;
+                }
+
+                return true;
+            },
+
+            toggleDarkMode: () => {
+                UI.playSound('click');
+                document.body.classList.toggle('dark-mode');
+                GameStorage.save('darkMode', document.body.classList.contains('dark-mode'));
+            },
+
+            navigate: (screenId) => {
+                UI.playSound('click');
+                document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+                document.getElementById(`screen-${screenId}`).classList.add('active');
+                
+                // Mostrar controles globales
+                document.getElementById('globalControls').style.display = 'flex';
+                
+                // Mostrar TopBar solo en Dashboard y Mision
+                if(screenId === 'dashboard' || screenId === 'mission') {
+                    document.getElementById('gameTopBar').style.display = 'flex';
+                } else {
+                    document.getElementById('gameTopBar').style.display = 'none';
+                }
+
+                if(screenId === 'dashboard') App.updateDashboard();
+            },
+
+            checkResumption: () => {
+                const savedState = GameStorage.load('gameState');
+                if (savedState && !savedState.finished) {
+                    // Hay una sesión pendiente
+                    if(confirm("Se encontró una evaluación en progreso. ¿Deseas continuar?")) {
+                        App.state = savedState;
+                        App.updateTopbar();
+                        App.startTimer();
+                        App.navigate('dashboard');
+                        UI.toast("Sesión restaurada", "success");
+                        return;
+                    } else {
+                        GameStorage.clear();
+                    }
+                }
+                App.navigate('welcome');
+            },
+
+            registerStudent: () => {
+                const name = document.getElementById('reg-name').value.trim();
+                const code = document.getElementById('reg-code').value.trim();
+                const section = document.getElementById('reg-section').value.trim();
+
+                if (!name || !code) {
+                    UI.toast("Nombre y Código son obligatorios", "error");
+                    UI.playSound('error');
+                    return;
+                }
+
+                App.state.student = { name, code, section };
+                App.state.evalId = UI.generateEvalID();
+                App.state.currentMissionIdx = 0;
+                App.state.xp = 0;
+                App.state.timeSeconds = 0;
+                
+                App.saveState();
+                App.updateTopbar();
+                App.startTimer();
+                App.navigate('dashboard');
+                UI.toast(`¡Bienvenido ${name}!`, "success");
+            },
+
+            updateTopbar: () => {
+                if(!App.state.student) return;
+                document.getElementById('ui-student-name').innerText = App.state.student.name.split(' ')[0];
+                document.getElementById('ui-xp').innerText = App.state.xp;
+                document.getElementById('ui-timer').innerText = UI.formatTime(App.state.timeSeconds);
+            },
+
+            startTimer: () => {
+                if(App.state.isTimerRunning) return;
+                App.state.isTimerRunning = true;
+                App.timerInterval = setInterval(() => {
+                    App.state.timeSeconds++;
+                    document.getElementById('ui-timer').innerText = UI.formatTime(App.state.timeSeconds);
+                    
+                    if (App.state.timeSeconds >= CONFIG.maxTimeMinutes * 60) {
+                        App.stopTimer();
+                        UI.toast("¡Tiempo agotado!", "error");
+                        App.navigate('upload');
+                    }
+
+                    // Verificar en tiempo real si se pasó la fecha de cierre durante el examen
+                    if (CONFIG.availability.enabled && new Date() > new Date(CONFIG.availability.end)) {
+                        App.stopTimer();
+                        UI.toast("¡La fecha de entrega ha finalizado!", "error");
+                        document.getElementById('closed-message').innerHTML = `El plazo para esta evaluación acaba de finalizar.<br><br>La fecha límite era <b style="color:var(--error)">${new Date(CONFIG.availability.end).toLocaleString()}</b>.`;
+                        App.navigate('closed');
+                    }
+                    
+                    // Auto-save cada 10 seg
+                    if(App.state.timeSeconds % 10 === 0) App.saveState();
+                }, 1000);
+            },
+
+            stopTimer: () => {
+                App.state.isTimerRunning = false;
+                clearInterval(App.timerInterval);
+            },
+
+            updateDashboard: () => {
+                const total = MISSIONS.length;
+                const current = App.state.currentMissionIdx;
+                const pct = Math.round((current / total) * 100);
+                
+                document.getElementById('ui-progress-bar').style.width = `${pct}%`;
+                document.getElementById('ui-progress-text').innerText = `${pct}%`;
+
+                if (current < total) {
+                    const m = MISSIONS[current];
+                    document.getElementById('dash-mission-title').innerText = `Misión ${current + 1}: ${m.title}`;
+                    document.getElementById('dash-mission-desc').innerText = m.objetivo;
+                    document.getElementById('btn-start-mission').style.display = 'block';
+                    document.getElementById('btn-finish-exam').style.display = 'none';
+                } else {
+                    document.getElementById('dash-mission-title').innerText = "¡Misiones Completadas!";
+                    document.getElementById('dash-mission-desc').innerText = "Es hora de validar tu archivo Excel.";
+                    document.getElementById('btn-start-mission').style.display = 'none';
+                    document.getElementById('btn-finish-exam').style.display = 'block';
+                    document.getElementById('ui-progress-bar').style.background = 'var(--warning)';
+                }
+            },
+
+            startCurrentMission: () => {
+                const m = MISSIONS[App.state.currentMissionIdx];
+                document.getElementById('mission-active-title').innerText = `Misión ${App.state.currentMissionIdx + 1}: ${m.title}`;
+                document.getElementById('mission-active-obj').innerText = m.objetivo;
+                document.getElementById('mission-active-desc').innerHTML = m.descripcion;
+                
+                App.navigate('mission');
+            },
+
+            completeMission: () => {
+                const m = MISSIONS[App.state.currentMissionIdx];
+                App.state.xp += m.xp;
+                App.state.currentMissionIdx++;
+                App.saveState();
+                App.updateTopbar();
+                
+                UI.playSound('success');
+                UI.toast(`¡Misión completada! +${m.xp} XP`, "success");
+                App.navigate('dashboard');
+            },
+
+            showHelp: () => {
+                UI.playSound('click');
+                const m = MISSIONS[App.state.currentMissionIdx];
+                document.getElementById('help-text').innerText = m.pista;
+                document.getElementById('help-modal').classList.add('active');
+            },
+
+            closeHelp: () => {
+                UI.playSound('click');
+                document.getElementById('help-modal').classList.remove('active');
+            },
+
+            handleFileSelect: (file) => {
+                if (!file.name.endsWith('.xlsx') && !file.name.endsWith('.xls')) {
+                    UI.toast("Solo se permiten archivos de Excel (.xlsx)", "error");
+                    UI.playSound('error');
+                    return;
+                }
+                App.state.fileObj = file;
+                document.getElementById('file-info').innerHTML = `<i class="fas fa-check-circle" style="color:var(--success)"></i> ${file.name} (${(file.size/1024).toFixed(1)} KB)`;
+                document.getElementById('btn-validate').style.display = 'block';
+                UI.playSound('click');
+            },
+
+            validateExcel: async () => {
+                if(!App.state.fileObj) return;
+                UI.playSound('click');
+                document.getElementById('btn-validate').innerText = "Validando...";
+                document.getElementById('btn-validate').disabled = true;
+                
+                App.stopTimer();
+
+                try {
+                    await ExcelValidator.readAndValidate(App.state.fileObj);
+                    App.state.finished = true;
+                    App.saveState();
+                    App.showResults();
+                } catch (error) {
+                    UI.toast(error, "error");
+                    document.getElementById('btn-validate').innerText = "Validar Archivo";
+                    document.getElementById('btn-validate').disabled = false;
+                }
+            },
+
+            showResults: () => {
+                App.navigate('results');
+                UI.playSound('success');
+                
+                document.getElementById('res-id').innerText = App.state.evalId;
+                document.getElementById('res-score').innerText = `${ExcelValidator.totalScore}/${CONFIG.totalScore}`;
+                document.getElementById('res-xp').innerText = App.state.xp;
+                document.getElementById('res-time').innerText = UI.formatTime(App.state.timeSeconds);
+
+                const detailsContainer = document.getElementById('res-details');
+                detailsContainer.innerHTML = '<h3 style="margin-bottom:15px; border-bottom:1px solid var(--surface-alt); padding-bottom:5px;">Detalle de Evaluación</h3>';
+                
+                ExcelValidator.results.forEach(res => {
+                    const icon = res.passed ? '<i class="fas fa-check" style="color:var(--success)"></i>' : '<i class="fas fa-times" style="color:var(--error)"></i>';
+                    const color = res.passed ? 'var(--text-main)' : 'var(--error)';
+                    detailsContainer.innerHTML += `
+                        <div style="display: flex; gap: 10px; margin-bottom: 12px; align-items: start; color: ${color}">
+                            <div style="margin-top: 3px;">${icon}</div>
+                            <div>
+                                <div style="font-weight: 700;">Misión ${res.missionId} <span style="font-size:0.8rem; color:var(--text-muted)">(${res.points} pts)</span></div>
+                                <div style="font-size: 0.9rem;">${res.message}</div>
+                            </div>
+                        </div>
+                    `;
+                });
+            },
+
+            submitGoogleForm: () => {
+                UI.playSound('click');
+                // Construcción de URL Prellenada
+                // Nota: Los parámetros (entry.XXXX) dependen del formulario del docente.
+                // Aquí se envían de forma genérica o como parámetros de URL demostrativos.
+                const baseUrl = CONFIG.googleFormUrl;
+                const params = new URLSearchParams();
+                params.append("entry.nombre", App.state.student.name);
+                params.append("entry.codigo", App.state.student.code);
+                params.append("entry.nota", ExcelValidator.totalScore);
+                params.append("entry.id", App.state.evalId);
+                
+                const finalUrl = `${baseUrl}?${params.toString()}`;
+                
+                UI.toast("Abriendo formulario para entregar...", "success");
+                setTimeout(() => {
+                    window.open(finalUrl, '_blank');
+                }, 1000);
+            },
+
+            saveState: () => {
+                // No guardamos el File Object porque no es serializable
+                const { fileObj, ...stateToSave } = App.state;
+                GameStorage.save('gameState', stateToSave);
+            },
+
+            // Funciones de Login del Docente
+            promptTeacherLogin: () => {
+                UI.playSound('click');
+                document.getElementById('teacher-password-input').value = ''; // Limpiar input previo
+                document.getElementById('teacher-login-modal').classList.add('active');
+            },
+
+            closeTeacherLogin: () => {
+                UI.playSound('click');
+                document.getElementById('teacher-login-modal').classList.remove('active');
+            },
+
+            verifyTeacherLogin: () => {
+                UI.playSound('click');
+                const passInput = document.getElementById('teacher-password-input').value;
+                if (passInput === CONFIG.teacherPassword) {
+                    App.closeTeacherLogin();
+                    App.openConfig();
+                } else {
+                    UI.toast("Contraseña incorrecta", "error");
+                    UI.playSound('error');
+                }
+            },
+
+            openConfig: () => {
+                // Llenar el formulario con la configuración actual
+                document.getElementById('conf-enabled').value = CONFIG.availability.enabled.toString();
+                // datetime-local requiere el formato YYYY-MM-DDThh:mm
+                document.getElementById('conf-start').value = CONFIG.availability.start.slice(0, 16);
+                document.getElementById('conf-end').value = CONFIG.availability.end.slice(0, 16);
+                document.getElementById('conf-url').value = CONFIG.googleFormUrl;
+                document.getElementById('conf-time').value = CONFIG.maxTimeMinutes;
+                document.getElementById('conf-password').value = CONFIG.teacherPassword;
+                
+                App.navigate('config');
+            },
+
+            saveConfig: () => {
+                UI.playSound('click');
+                
+                // Leer valores del formulario
+                const enabled = document.getElementById('conf-enabled').value === "true";
+                const start = document.getElementById('conf-start').value;
+                const end = document.getElementById('conf-end').value;
+                const url = document.getElementById('conf-url').value;
+                const time = document.getElementById('conf-time').value;
+                const newPass = document.getElementById('conf-password').value;
+
+                // Actualizar objeto CONFIG
+                CONFIG.availability.enabled = enabled;
+                if (start) CONFIG.availability.start = start;
+                if (end) CONFIG.availability.end = end;
+                if (url) CONFIG.googleFormUrl = url;
+                if (time) CONFIG.maxTimeMinutes = parseInt(time);
+                if (newPass) CONFIG.teacherPassword = newPass;
+
+                // Guardar en LocalStorage para que persista al recargar
+                GameStorage.save('teacherConfig', CONFIG);
+                
+                UI.toast("¡Configuración guardada exitosamente!", "success");
+                
+                // Reiniciar a la pantalla de bienvenida y verificar fechas inmediatamente
+                if (!App.checkAvailability()) {
+                    App.navigate('closed');
+                } else {
+                    App.navigate('welcome');
+                }
+            }
+        };
+
+        // Inicializar aplicación
+        window.onload = App.init;
+
+    </script>
+</body>
+</html>

@@ -617,7 +617,7 @@
             teacher: "Docente Principal",
             institution: "Academia Virtual",
             maxTimeMinutes: 30, // Tiempo límite
-            googleFormUrl: "https://docs.google.com/forms/d/e/1FAIpQLSfDUMMY_FORM_ID/viewform",
+            googleFormUrl: "https://docs.google.com/forms/d/e/1FAIpQLSdoECfTRtOW6QYUzCFJKSF026gsAgPno2HzmLrgsUZxtDleNg/viewform?usp=sharing&ouid=100059797712695737256",
             darkModeDefault: false,
             soundEnabled: true,
             totalScore: 20,
@@ -888,7 +888,15 @@
                 // Cargar configuración del docente guardada previamente
                 const savedConfig = GameStorage.load('teacherConfig');
                 if (savedConfig) {
-                    Object.assign(CONFIG, savedConfig);
+                    // Fusión profunda y segura (Deep Merge)
+                    // Evita borrar objetos anidados como 'availability' si faltan propiedades
+                    for (const key in savedConfig) {
+                        if (typeof savedConfig[key] === 'object' && savedConfig[key] !== null && !Array.isArray(savedConfig[key])) {
+                            CONFIG[key] = { ...CONFIG[key], ...savedConfig[key] };
+                        } else {
+                            CONFIG[key] = savedConfig[key];
+                        }
+                    }
                     
                     // Si en LocalStorage existía la contraseña antigua (admin), la forzamos a la nueva para no bloquearte
                     if (CONFIG.teacherPassword === "admin") {
@@ -920,8 +928,15 @@
                 if (!CONFIG.availability.enabled) return true;
                 
                 const now = new Date();
-                const startDate = new Date(CONFIG.availability.start);
-                const endDate = new Date(CONFIG.availability.end);
+                
+                // Parseo seguro de fecha (Asegura tener segundos para evitar bugs en navegadores)
+                const parseSafeDate = (dStr) => {
+                    if(!dStr) return new Date();
+                    return new Date(dStr.length === 16 ? dStr + ":00" : dStr);
+                };
+
+                const startDate = parseSafeDate(CONFIG.availability.start);
+                const endDate = parseSafeDate(CONFIG.availability.end);
                 const messageEl = document.getElementById('closed-message');
 
                 if (now < startDate) {
@@ -1024,10 +1039,11 @@
                     }
 
                     // Verificar en tiempo real si se pasó la fecha de cierre durante el examen
-                    if (CONFIG.availability.enabled && new Date() > new Date(CONFIG.availability.end)) {
+                    const endDateSafe = new Date(CONFIG.availability.end.length === 16 ? CONFIG.availability.end + ":00" : CONFIG.availability.end);
+                    if (CONFIG.availability.enabled && new Date() > endDateSafe) {
                         App.stopTimer();
                         UI.toast("¡La fecha de entrega ha finalizado!", "error");
-                        document.getElementById('closed-message').innerHTML = `El plazo para esta evaluación acaba de finalizar.<br><br>La fecha límite era <b style="color:var(--error)">${new Date(CONFIG.availability.end).toLocaleString()}</b>.`;
+                        document.getElementById('closed-message').innerHTML = `El plazo para esta evaluación acaba de finalizar.<br><br>La fecha límite era <b style="color:var(--error)">${endDateSafe.toLocaleString()}</b>.`;
                         App.navigate('closed');
                     }
                     
@@ -1207,11 +1223,10 @@
             },
 
             openConfig: () => {
-                // Llenar el formulario con la configuración actual
+                // Llenar el formulario con la configuración actual de forma segura
                 document.getElementById('conf-enabled').value = CONFIG.availability.enabled.toString();
-                // datetime-local requiere el formato YYYY-MM-DDThh:mm
-                document.getElementById('conf-start').value = CONFIG.availability.start.slice(0, 16);
-                document.getElementById('conf-end').value = CONFIG.availability.end.slice(0, 16);
+                document.getElementById('conf-start').value = (CONFIG.availability.start || "").substring(0, 16);
+                document.getElementById('conf-end').value = (CONFIG.availability.end || "").substring(0, 16);
                 document.getElementById('conf-url').value = CONFIG.googleFormUrl;
                 document.getElementById('conf-time').value = CONFIG.maxTimeMinutes;
                 document.getElementById('conf-password').value = CONFIG.teacherPassword;
@@ -1229,6 +1244,13 @@
                 const url = document.getElementById('conf-url').value;
                 const time = document.getElementById('conf-time').value;
                 const newPass = document.getElementById('conf-password').value;
+
+                // Validar que, si se habilita el bloqueo de fecha, se hayan introducido ambas fechas correctamente
+                if (enabled && (!start || !end)) {
+                    UI.toast("¡Atención! Debes ingresar una fecha y hora completa en ambos campos.", "error");
+                    UI.playSound('error');
+                    return; // Detenemos el guardado para evitar borrar la fecha de los ajustes
+                }
 
                 // Actualizar objeto CONFIG
                 CONFIG.availability.enabled = enabled;
